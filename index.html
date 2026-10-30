@@ -1,0 +1,896 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Polnisch lernen</title>
+<link rel="icon" href="icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Polnisch">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#f6f5f2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#161618" media="(prefers-color-scheme: dark)">
+<style>
+:root {
+  --bg: #f6f5f2; --surface: #ffffff; --surface-2: #efede8; --text: #1d1d1f; --muted: #6b6a66;
+  --border: #e2dfd8; --accent: #d7263d; --accent-soft: #fbe3e6; --good: #2e8b57; --good-soft: #dff2e6;
+  --warn: #c77700; --warn-soft: #fbeed8; --bad: #c62828; --bad-soft: #fbe0e0; --easy: #2f6fdb; --easy-soft: #e1ebfb;
+  --heat0: #e8e5de; --heat1: #f6c2c8; --heat2: #ec8795; --heat3: #dd4a5f; --heat4: #a8182e;
+  --shadow: 0 1px 2px rgba(0,0,0,.05), 0 4px 16px rgba(0,0,0,.05);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #161618; --surface: #212124; --surface-2: #2b2b2f; --text: #f1f0ed; --muted: #a09f9a;
+    --border: #36363b; --accent: #f0495e; --accent-soft: #3d1d23; --good: #4cc27f; --good-soft: #1b3325;
+    --warn: #f0a53a; --warn-soft: #3a2c15; --bad: #ef5b5b; --bad-soft: #3d1c1c; --easy: #6b9bf0; --easy-soft: #1c2940;
+    --heat0: #2b2b2f; --heat1: #5a2630; --heat2: #8f2e3e; --heat3: #c9394f; --heat4: #f06a7c;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 4px 16px rgba(0,0,0,.25);
+  }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg); color: var(--text);
+  font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+html { -webkit-text-size-adjust: 100%; }
+button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulation; }
+.wrap { max-width: 720px; margin: 0 auto; padding: 16px 16px calc(16px + env(safe-area-inset-bottom)); }
+.timeleft { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--muted); }
+.note { margin: 16px 0 0; font-size: 13px; color: var(--muted); }
+.field { width: 100%; font: inherit; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); color: var(--text); margin-top: 8px; }
+.syncerr { color: var(--bad); }
+.syncok { color: var(--good); }
+header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+header h1 { font-size: 18px; margin: 0; flex: 1; display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.flag { width: 22px; height: 14px; border-radius: 2px; overflow: hidden; display: inline-flex; flex-direction: column; box-shadow: 0 0 0 1px var(--border); }
+.flag i { flex: 1; } .flag i:first-child { background: #fff; } .flag i:last-child { background: #dc143c; }
+nav { display: flex; gap: 4px; }
+nav button { background: none; border: 0; padding: 6px 10px; border-radius: 8px; color: var(--muted); }
+nav button.on, nav button:hover { background: var(--surface-2); color: var(--text); }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px; box-shadow: var(--shadow); margin-bottom: 16px; }
+.muted { color: var(--muted); }
+.small { font-size: 13px; }
+.row { display: flex; gap: 16px; flex-wrap: wrap; }
+.row > * { flex: 1; min-width: 140px; }
+.btn { border: 1px solid var(--border); background: var(--surface); padding: 10px 16px; border-radius: 10px; }
+.btn:hover { background: var(--surface-2); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn.big { width: 100%; padding: 18px; font-size: 20px; border-radius: 14px; }
+.btn:disabled { opacity: .5; cursor: default; }
+.link { background: none; border: 0; color: var(--accent); padding: 0; text-decoration: underline; }
+
+/* Home */
+.streak { display: flex; align-items: center; gap: 16px; }
+.streak .flame { font-size: 48px; line-height: 1; filter: grayscale(var(--gray, 0)); }
+.streak .num { font-size: 40px; font-weight: 700; line-height: 1; }
+.pill { display: inline-block; padding: 2px 10px; border-radius: 99px; font-size: 13px; font-weight: 600; }
+.pill.ok { background: var(--good-soft); color: var(--good); }
+.pill.open { background: var(--warn-soft); color: var(--warn); }
+.counts { display: flex; gap: 10px; margin: 16px 0; }
+.count { flex: 1; background: var(--surface-2); border-radius: 12px; padding: 12px; text-align: center; }
+.count b { display: block; font-size: 26px; line-height: 1.2; }
+.count.new b { color: var(--easy); } .count.learn b { color: var(--warn); } .count.rev b { color: var(--good); }
+.bar { height: 10px; background: var(--surface-2); border-radius: 99px; overflow: hidden; display: flex; }
+.bar i { display: block; height: 100%; }
+.stat b { font-size: 22px; display: block; }
+.heat { display: grid; grid-auto-flow: column; grid-template-rows: repeat(7, 1fr); gap: 3px; margin-top: 10px; overflow-x: auto; }
+.heat i { width: 13px; height: 13px; border-radius: 3px; background: var(--heat0); display: block; }
+.heat i[data-l="1"] { background: var(--heat1); } .heat i[data-l="2"] { background: var(--heat2); }
+.heat i[data-l="3"] { background: var(--heat3); } .heat i[data-l="4"] { background: var(--heat4); }
+.heat i.today { outline: 2px solid var(--text); outline-offset: 1px; }
+.heat i.future { visibility: hidden; }
+
+/* Session */
+.topline { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; font-size: 14px; }
+.topline .bar { flex: 1; }
+.qc { display: flex; gap: 10px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.qc .n { color: var(--easy); } .qc .l { color: var(--warn); } .qc .r { color: var(--good); }
+.quiz { text-align: center; padding: 32px 20px; min-height: 360px; display: flex; flex-direction: column; justify-content: center; }
+.badge { display: inline-block; margin: 0 auto 16px; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; padding: 4px 10px; border-radius: 99px; background: var(--surface-2); color: var(--muted); }
+.badge.new { background: var(--easy-soft); color: var(--easy); }
+.prompt { font-size: 40px; font-weight: 700; line-height: 1.2; word-break: break-word; }
+.prompt .hint { display: block; font-size: 16px; font-weight: 400; color: var(--muted); margin-top: 4px; }
+.answer { font-size: 28px; font-weight: 600; margin-top: 8px; color: var(--accent); word-break: break-word; }
+.divider { height: 1px; background: var(--border); margin: 20px auto; width: 60%; }
+.speak { background: var(--surface-2); border: 0; border-radius: 99px; width: 40px; height: 40px; margin: 12px auto 0; display: inline-flex; align-items: center; justify-content: center; font-size: 18px; }
+.speak:hover { background: var(--border); }
+input.ans { width: 100%; max-width: 420px; font: inherit; font-size: 22px; padding: 12px 16px; border-radius: 12px; border: 2px solid var(--border); background: var(--bg); color: var(--text); text-align: center; outline: none; margin-top: 24px; }
+input.ans:focus { border-color: var(--accent); }
+input.ans.right { border-color: var(--good); background: var(--good-soft); }
+input.ans.close { border-color: var(--warn); background: var(--warn-soft); }
+input.ans.wrong { border-color: var(--bad); background: var(--bad-soft); text-decoration: line-through; }
+.chars { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; margin-top: 10px; }
+.chars button { border: 1px solid var(--border); background: var(--surface); border-radius: 8px; width: 36px; height: 36px; font-size: 18px; }
+.chars button:hover { background: var(--surface-2); }
+.fb { margin-top: 16px; font-weight: 600; }
+.fb.right { color: var(--good); } .fb.close { color: var(--warn); } .fb.wrong { color: var(--bad); }
+.actions { display: flex; gap: 10px; justify-content: center; margin-top: 24px; flex-wrap: wrap; }
+.rates { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 16px; }
+.rate { border: 2px solid transparent; border-radius: 12px; padding: 10px 4px; font-weight: 600; display: flex; flex-direction: column; align-items: center; line-height: 1.25; }
+.rate small { font-weight: 400; font-size: 12px; opacity: .8; }
+.rate kbd { font: 11px ui-monospace, monospace; opacity: .6; }
+.rate.r1 { background: var(--bad-soft); color: var(--bad); }
+.rate.r2 { background: var(--warn-soft); color: var(--warn); }
+.rate.r3 { background: var(--good-soft); color: var(--good); }
+.rate.r4 { background: var(--easy-soft); color: var(--easy); }
+.rate.sug { border-color: currentColor; }
+.rate:hover { filter: brightness(.96); }
+.keys { text-align: center; margin-top: 12px; }
+
+/* Words */
+.search { width: 100%; font: inherit; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); color: var(--text); margin-bottom: 12px; }
+table { width: 100%; border-collapse: collapse; font-size: 15px; }
+td, th { padding: 8px 6px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+th { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; font-weight: 600; }
+td.num { color: var(--muted); font-variant-numeric: tabular-nums; width: 44px; }
+td.pl { font-weight: 600; }
+.st { font-size: 12px; white-space: nowrap; }
+.st.new { color: var(--muted); } .st.learn { color: var(--warn); } .st.rev { color: var(--good); }
+.edit { background: none; border: 0; color: var(--muted); padding: 0 4px; }
+.edit:hover { color: var(--accent); }
+
+/* Settings */
+.set { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+.set:last-child { border-bottom: 0; }
+.set label { font-weight: 600; }
+.set .d { font-size: 13px; color: var(--muted); font-weight: 400; }
+.set input[type=number], .set select { font: inherit; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); }
+.set input[type=number] { width: 90px; }
+.seg { display: inline-flex; background: var(--surface-2); border-radius: 10px; padding: 3px; }
+.seg button { border: 0; background: none; padding: 6px 12px; border-radius: 8px; font-size: 14px; color: var(--muted); }
+.seg button.on { background: var(--surface); color: var(--text); box-shadow: var(--shadow); }
+
+.done { text-align: center; padding: 40px 20px; }
+.done .big { font-size: 64px; }
+
+@media (max-width: 520px) {
+  .prompt { font-size: 32px; }
+  .answer { font-size: 24px; }
+  .quiz { padding: 20px 14px; min-height: 300px; }
+  .rates { gap: 6px; }
+  .rate { padding: 12px 2px; font-size: 14px; }
+  .rate small { font-size: 11px; }
+  .set { flex-direction: column; align-items: flex-start; }
+  nav button { padding: 6px 8px; }
+  header h1 .t { display: none; }
+  .streak { flex-wrap: wrap; gap: 10px 12px; }
+  .streak .flame { font-size: 36px; }
+  .streak .num { font-size: 30px; white-space: nowrap; }
+  header { margin-bottom: 12px; }
+}
+@media (hover: none) {
+  .rate kbd, .keys { display: none; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1 onclick="go('home')"><span class="flag"><i></i><i></i></span> <span class="t">Polnisch lernen</span></h1>
+    <nav>
+      <button data-v="home" onclick="go('home')">Heute</button>
+      <button data-v="words" onclick="go('words')">Wörter</button>
+      <button data-v="settings" onclick="go('settings')">Einstellungen</button>
+    </nav>
+  </header>
+  <main id="app"></main>
+</div>
+<input type="file" id="importFile" accept=".json,application/json" hidden>
+
+<script src="words.js"></script>
+<script src="sync.js"></script>
+<script>
+// ---------- Speicher ----------
+const STORE = 'polnisch-srs-v1';
+const DEFAULT_SETTINGS = { newPerDay: 15, maxReviews: 200, blockMinutes: 5, mode: 'type', dirs: 'both', autoAudio: true, charKeys: false };
+const LEARN_STEPS = 2;   // wie oft ein neues Wort "Gut" braucht, bevor es in die Wiederholung geht
+const RELEARN_STEPS = 1;
+const COUNTERS = ['new', 'rev', 'count', 'extra', 'blocks'];
+
+function load() {
+  let s = null;
+  try { s = JSON.parse(localStorage.getItem(STORE)); } catch (e) {}
+  s = s || {};
+  const out = {
+    v: s.v || 1,
+    gen: s.gen || 0,               // erhöht sich bei Reset/Import: die neuere Generation ersetzt beim Sync alles
+    cards: s.cards || {},          // "wortIndex:pd" | "wortIndex:dp" -> Karte (due in Lerntagen, u = geändert um)
+    log: s.log || {},              // "YYYY-MM-DD" -> { new, rev, count, extra, blocks, done, d: {gerät: Zähler} }
+    settings: Object.assign({}, DEFAULT_SETTINGS, s.settings || {}),
+    settingsU: s.settingsU || 0,
+    overrides: s.overrides || {},  // wortIndex -> [pl, de, geändertUm] (pl = null: zurückgesetzt)
+    session: s.session || null,    // aktueller Block: { day, queue: [{t:'new', w} | {t:'card', k}], ms, startCount }
+  };
+  if (out.v < 2) {
+    if (s.cards) try { localStorage.setItem(STORE + '-backup', JSON.stringify(s)); } catch (e) {}
+    migrate(out);
+  }
+  return out;
+}
+// v1 -> v2: Fälligkeiten von Kalendertagen auf Lerntage umstellen, Zähler pro Gerät führen.
+function migrate(s) {
+  const t = today(), key = dayKey();
+  const active = Object.keys(s.log).filter(k => k < key && isActive(s.log[k])).map(keyToNum);
+  const missed = active.length ? Math.max(0, t - Math.max(...active) - 1) : 0;
+  const delta = planOf(s.log) - t + missed;
+  for (const c of Object.values(s.cards)) { c.due += delta; c.u = c.u || 0; }
+  for (const L of Object.values(s.log)) {
+    if (L.d) continue;
+    const legacy = {};
+    for (const f of COUNTERS) if (L[f]) legacy[f] = L[f];
+    L.d = { legacy };
+  }
+  for (const i of Object.keys(s.overrides)) if (s.overrides[i].length < 3) s.overrides[i][2] = 0;
+  s.session = null;
+  s.v = 2;
+}
+function save() {
+  try { localStorage.setItem(STORE, JSON.stringify(S)); }
+  catch (e) { alert('Speichern fehlgeschlagen: ' + e.message + '\nBitte unter Einstellungen ein Backup exportieren.'); }
+}
+
+// ---------- Tage (Tageswechsel um 4 Uhr nachts) ----------
+const pad = n => String(n).padStart(2, '0');
+function dayKey(offset = 0) {
+  const d = new Date(Date.now() - 4 * 3600e3);
+  d.setDate(d.getDate() + offset);
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+const keyToNum = k => { const [y, m, d] = k.split('-').map(Number); return Math.round(Date.UTC(y, m - 1, d) / 864e5); };
+const numToKey = n => { const d = new Date(n * 864e5); return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`; };
+const today = () => keyToNum(dayKey());
+function logDay(key = dayKey()) {
+  return S.log[key] || (S.log[key] = { new: 0, rev: 0, count: 0, extra: 0, blocks: 0, done: false, d: {} });
+}
+function bump(field, n = 1) {
+  const L = logDay(), mine = L.d[deviceId] || (L.d[deviceId] = {});
+  mine[field] = (mine[field] || 0) + n;
+  L[field] = (L[field] || 0) + n;
+}
+// Lerntage statt Kalendertage: Die Uhr des Lernplans läuft nur an Tagen, an denen gelernt wurde.
+// So staut sich nach Pausen nichts an, und alle Geräte rechnen aus dem gleichen Log dasselbe aus.
+const isActive = L => !!L && (L.count > 0 || L.new > 0 || L.done);
+function planOf(log) {
+  const key = dayKey();
+  return Object.keys(log).filter(k => k < key && isActive(log[k])).length;
+}
+const plan = () => planOf(S.log);
+
+let S = load();
+
+// ---------- Wörter ----------
+const word = i => { const o = S.overrides[i]; return o && o[0] != null ? o : WORDS[i]; };
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const dirOf = k => k.split(':')[1];
+const idxOf = k => +k.split(':')[0];
+const dirEnabled = dir => S.settings.dirs === 'both' || S.settings.dirs === dir;
+
+// ---------- Planung (SM-2, ähnlich wie Anki) ----------
+function schedule(c0, r, t) {
+  const c = Object.assign({}, c0);
+  if (c.s === 'review') {
+    const overdue = Math.max(0, t - c.due);
+    if (r === 1) {
+      c.lapses++; c.ease = Math.max(1.3, c.ease - 0.2);
+      c.ivl = Math.max(1, Math.round(c.ivl * 0.2));
+      c.s = 'relearn'; c.step = 0; c.due = t;
+      return { c, rq: 3 };
+    }
+    let ivl;
+    if (r === 2) { ivl = Math.max(c.ivl + 1, Math.round(c.ivl * 1.2)); c.ease = Math.max(1.3, c.ease - 0.15); }
+    else if (r === 3) { ivl = Math.max(c.ivl + 1, Math.round((c.ivl + overdue / 2) * c.ease)); }
+    else { ivl = Math.max(c.ivl + 2, Math.round((c.ivl + overdue) * c.ease * 1.3)); c.ease += 0.15; }
+    c.ivl = Math.min(3650, ivl); c.due = t + c.ivl;
+    return { c, rq: null };
+  }
+  // Lernen / Neu lernen
+  const steps = c.s === 'learn' ? LEARN_STEPS : RELEARN_STEPS;
+  if (r === 1) { c.step = 0; c.due = t; return { c, rq: 3 }; }
+  if (r === 2) { c.due = t; return { c, rq: 5 }; }
+  if (r === 3) { c.step++; if (c.step < steps) { c.due = t; return { c, rq: 8 }; } }
+  const easy = r === 4;
+  if (c.s === 'learn') c.ivl = easy ? 4 : 1; else c.ivl = easy ? c.ivl + 1 : c.ivl;
+  c.s = 'review'; c.step = 0; c.due = t + c.ivl;
+  return { c, rq: null };
+}
+function fmtIvl(res) {
+  if (res.rq != null) return res.rq <= 3 ? 'gleich' : 'später heute';
+  const d = res.c.ivl;
+  if (d === 1) return '1 Tag';
+  if (d < 30) return d + ' Tage';
+  if (d < 365) return (d / 30).toFixed(1).replace('.0', '').replace('.', ',') + ' Mon.';
+  return (d / 365).toFixed(1).replace('.', ',') + ' J.';
+}
+const newCard = due => ({ s: 'learn', step: 0, due, ivl: 0, ease: 2.5, reps: 0, lapses: 0, u: Date.now() });
+
+// ---------- Tagessitzung zusammenstellen ----------
+function introduced(i) { return S.cards[i + ':pd'] || S.cards[i + ':dp']; }
+function buildQueue() {
+  const t = plan(), L = logDay();
+  const due = Object.entries(S.cards).filter(([k, c]) => dirEnabled(dirOf(k)) && c.due <= t);
+  const learn = due.filter(([, c]) => c.s !== 'review').sort((a, b) => a[1].due - b[1].due);
+  const rev = shuffle(due.filter(([, c]) => c.s === 'review').sort((a, b) => a[1].due - b[1].due)
+    .slice(0, Math.max(0, S.settings.maxReviews - L.rev)));
+  const dueItems = [...learn, ...rev].slice(0, Math.max(0, S.settings.maxReviews - L.rev) + learn.length)
+    .map(([k]) => ({ t: 'card', k }));
+  const nNew = Math.max(0, S.settings.newPerDay + (L.extra || 0) - L.new);
+  const news = [];
+  for (let i = 0; i < WORDS.length && news.length < nNew; i++) if (!introduced(i)) news.push({ t: 'new', w: i });
+  // neue Wörter gleichmäßig zwischen die Wiederholungen verteilen
+  const out = [];
+  const gap = news.length ? dueItems.length / news.length : 0;
+  let di = 0;
+  news.forEach((n, j) => {
+    while (di < Math.round(j * gap)) out.push(dueItems[di++]);
+    out.push(n);
+  });
+  while (di < dueItems.length) out.push(dueItems[di++]);
+  return out;
+}
+function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+function currentSession() {
+  if (S.session && S.session.day === dayKey()) return S.session;
+  return null;
+}
+function queueCounts(q) {
+  let n = 0, l = 0, r = 0;
+  for (const it of q) {
+    if (it.t === 'new') n++;
+    else { const c = S.cards[it.k]; if (c && c.s === 'review') r++; else l++; }
+  }
+  return { n, l, r };
+}
+
+// ---------- Streak ----------
+function streak() {
+  let d = today();
+  if (!(S.log[numToKey(d)] || {}).done) d--;
+  let n = 0;
+  while ((S.log[numToKey(d)] || {}).done) { n++; d--; }
+  return n;
+}
+function bestStreak() {
+  const days = Object.keys(S.log).filter(k => S.log[k].done).map(keyToNum).sort((a, b) => a - b);
+  let best = 0, cur = 0, prev = null;
+  for (const d of days) { cur = prev === d - 1 ? cur + 1 : 1; best = Math.max(best, cur); prev = d; }
+  return best;
+}
+
+// ---------- Antwort prüfen ----------
+function plain(s) {
+  return s.replace(/ł/g, 'l').replace(/Ł/g, 'L').replace(/ß/g, 'ss').normalize('NFD').replace(/[̀-ͯ]/g, '');
+}
+function clean(s, lang) {
+  s = s.toLowerCase().replace(/\(.*?\)/g, ' ').replace(/[.,!?;:"'„“”…\-–+]/g, ' ').replace(/\s+/g, ' ').trim();
+  if (lang === 'de') for (let i = 0; i < 2; i++) s = s.replace(/^(der|die|das|ein|eine|sich|zu|am) /, '');
+  return s;
+}
+const alts = (s, lang) => s.split('/').map(x => clean(x, lang)).filter(Boolean);
+function lev(a, b) {
+  const m = a.length, n = b.length, d = Array.from({ length: m + 1 }, (_, i) => [i]);
+  for (let j = 1; j <= n; j++) d[0][j] = j;
+  for (let i = 1; i <= m; i++) for (let j = 1; j <= n; j++)
+    d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+  return d[m][n];
+}
+function matchLevel(input, targets) {
+  // 3 = exakt, 2 = nur Sonderzeichen falsch, 1 = Tippfehler, 0 = falsch
+  let best = 0;
+  for (const t of targets) {
+    if (input === t) return 3;
+    const a = plain(input), b = plain(t);
+    if (a === b) best = Math.max(best, 2);
+    else if (b.length >= 4 && lev(a, b) <= (b.length >= 8 ? 2 : 1)) best = Math.max(best, 1);
+  }
+  return best;
+}
+function grade(raw, i, dir) {
+  const lang = dir === 'pd' ? 'de' : 'pl';
+  const [pl, de] = word(i);
+  const target = dir === 'pd' ? de : pl;
+  const inputs = [clean(raw, lang), ...raw.split('/').map(x => clean(x, lang))].filter(Boolean);
+  if (!inputs.length) return { lvl: 0 };
+  let lvl = Math.max(...inputs.map(x => matchLevel(x, alts(target, lang))));
+  if (lvl >= 2) return { lvl };
+  // anderes Wort mit gleicher Bedeutung? (z. B. Synonyme)
+  const mine = new Set(alts(dir === 'pd' ? pl : de, dir === 'pd' ? 'pl' : 'de'));
+  for (let j = 0; j < WORDS.length; j++) {
+    if (j === i) continue;
+    const [pl2, de2] = word(j);
+    const src2 = dir === 'pd' ? pl2 : de2, tgt2 = dir === 'pd' ? de2 : pl2;
+    if (!alts(src2, dir === 'pd' ? 'pl' : 'de').some(a => mine.has(a))) continue;
+    if (inputs.some(x => matchLevel(x, alts(tgt2, lang)) >= 2)) return { lvl: 2, other: true };
+  }
+  return { lvl };
+}
+
+// ---------- Sprachausgabe ----------
+let plVoice = null;
+function pickVoice() {
+  if (!('speechSynthesis' in window)) return;
+  const vs = speechSynthesis.getVoices();
+  plVoice = vs.find(v => /^pl/i.test(v.lang) && /natural|online/i.test(v.name)) || vs.find(v => /^pl/i.test(v.lang)) || null;
+}
+if ('speechSynthesis' in window) { pickVoice(); speechSynthesis.onvoiceschanged = () => { pickVoice(); if (view === 'session') renderSession(); }; }
+function speak(text) {
+  if (!plVoice) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text.replace(/\s*\/\s*/g, ', ').replace(/…/g, ''));
+  u.voice = plVoice; u.lang = plVoice.lang; u.rate = 0.9;
+  speechSynthesis.speak(u);
+}
+const speakBtn = i => plVoice ? `<button class="speak" title="Anhören (A)" onclick="speak(word(${i})[0])">🔊</button>` : '';
+
+// ---------- Navigation ----------
+let view = 'home';
+function go(v) {
+  view = v;
+  document.querySelectorAll('nav button').forEach(b => b.classList.toggle('on', b.dataset.v === v || (v === 'session' && b.dataset.v === 'home')));
+  ({ home: renderHome, session: renderSession, words: renderWords, settings: renderSettings })[v]();
+  window.scrollTo(0, 0);
+}
+const app = document.getElementById('app');
+
+// ---------- Startseite ----------
+const estimateSec = c => c.n * 30 + c.l * 12 + c.r * 8;
+function blocksLeft(c) {
+  return Math.max(1, Math.ceil(estimateSec(c) / (S.settings.blockMinutes * 60)));
+}
+function missedDays() {
+  const key = dayKey();
+  if (isActive(S.log[key])) return 0;
+  const active = Object.keys(S.log).filter(k => k < key && isActive(S.log[k])).map(keyToNum);
+  return active.length ? Math.max(0, today() - Math.max(...active) - 1) : 0;
+}
+
+function renderHome() {
+  const L = logDay(), st = streak(), best = bestStreak();
+  const sess = currentSession();
+  const c = queueCounts(buildQueue());
+  const total = c.n + c.l + c.r;
+  const done = L.done && total === 0;
+  const inProgress = sess && sess.queue.length > 0 && sess.ms > 0;
+  const missed = missedDays();
+
+  let introducedN = 0, matureN = 0, learningN = 0;
+  for (let i = 0; i < WORDS.length; i++) {
+    const a = S.cards[i + ':pd'], b = S.cards[i + ':dp'];
+    if (!a && !b) continue;
+    introducedN++;
+    const cs = [a, b].filter(x => x && dirEnabled(x === a ? 'pd' : 'dp'));
+    if (cs.length && cs.every(x => x.s === 'review' && x.ivl >= 21)) matureN++;
+    else if (cs.some(x => x.s !== 'review')) learningN++;
+  }
+  const t = plan();
+  const tomorrow = Object.entries(S.cards).filter(([k, c]) => dirEnabled(dirOf(k)) && c.due <= t + 1).length;
+
+  let btn;
+  if (done) {
+    btn = `<button class="btn big" onclick="extraNew()">+ ${S.settings.newPerDay} weitere neue Wörter</button>`;
+  } else {
+    const label = inProgress ? 'Block fortsetzen' : `Block starten (${S.settings.blockMinutes} Min.)`;
+    btn = `<button class="btn primary big" onclick="startSession()">${label}</button>
+      <p class="note" style="text-align:center">${L.blocks ? `${L.blocks} ${L.blocks === 1 ? 'Block' : 'Blöcke'} heute · ` : ''}noch ca. ${blocksLeft(c)} ${blocksLeft(c) === 1 ? 'Block' : 'Blöcke'}, um alles zu schaffen</p>`;
+  }
+
+  app.innerHTML = `
+  <div class="card">
+    <div class="streak" style="--gray:${st ? 0 : 1}">
+      <div class="flame">🔥</div>
+      <div style="flex:1">
+        <div class="num">${st} ${st === 1 ? 'Tag' : 'Tage'}</div>
+        <div class="muted small">Streak · Rekord: ${best} ${best === 1 ? 'Tag' : 'Tage'}</div>
+      </div>
+      ${L.done ? '<span class="pill ok">Heute erledigt ✓</span>' : '<span class="pill open">Heute noch offen</span>'}
+    </div>
+    ${missed ? `<p class="note">⏸ Du hast ${missed} ${missed === 1 ? 'Tag' : 'Tage'} pausiert – dein Lernplan wurde mitverschoben, damit sich nichts anstaut.</p>` : ''}
+    ${done ? `<p style="margin:20px 0 12px">Du hast heute alles geschafft. Morgen stehen ca. <b>${tomorrow}</b> Karten an.</p>` : `
+    <div class="counts">
+      <div class="count new"><b>${c.n}</b><span class="small muted">Neu</span></div>
+      <div class="count learn"><b>${c.l}</b><span class="small muted">Lernen</span></div>
+      <div class="count rev"><b>${c.r}</b><span class="small muted">Wiederholen</span></div>
+    </div>`}
+    ${btn}
+  </div>
+
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px">
+      <b>Fortschritt</b><span class="muted small">${introducedN} / ${WORDS.length} Wörter gesehen</span>
+    </div>
+    <div class="bar">
+      <i style="width:${matureN / WORDS.length * 100}%;background:var(--good)"></i>
+      <i style="width:${(introducedN - matureN - learningN) / WORDS.length * 100}%;background:var(--heat2)"></i>
+      <i style="width:${learningN / WORDS.length * 100}%;background:var(--warn)"></i>
+    </div>
+    <div class="row" style="margin-top:16px">
+      <div class="stat"><b style="color:var(--good)">${matureN}</b><span class="small muted">gefestigt (≥ 3 Wochen)</span></div>
+      <div class="stat"><b style="color:var(--heat3)">${introducedN - matureN - learningN}</b><span class="small muted">in Wiederholung</span></div>
+      <div class="stat"><b style="color:var(--warn)">${learningN}</b><span class="small muted">gerade in Lernphase</span></div>
+      <div class="stat"><b>${WORDS.length - introducedN}</b><span class="small muted">noch neu</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <b>Aktivität</b> <span class="muted small">· heute ${L.count} Antworten</span>
+    ${heatmap()}
+  </div>`;
+}
+function heatmap() {
+  const t = today(), weeks = 26;
+  const todayDow = (new Date(t * 864e5).getUTCDay() + 6) % 7; // Mo = 0
+  const start = t - todayDow - (weeks - 1) * 7;
+  let html = '';
+  for (let d = start; d < start + weeks * 7; d++) {
+    const L = S.log[numToKey(d)];
+    const n = L ? L.count : 0;
+    const l = n === 0 ? 0 : n < 20 ? 1 : n < 50 ? 2 : n < 100 ? 3 : 4;
+    const cls = d === t ? 'today' : d > t ? 'future' : '';
+    html += `<i data-l="${l}" class="${cls}" title="${numToKey(d)}: ${n} Antworten${L && L.done ? ' ✓' : ''}"></i>`;
+  }
+  return `<div class="heat">${html}</div>`;
+}
+function extraNew() {
+  bump('extra', S.settings.newPerDay);
+  S.session = null; save();
+  startSession();
+}
+
+// ---------- Lernblöcke ----------
+let cur = null; // { item, revealed, result, input }
+let lastInteract = 0;
+function startSession() {
+  let sess = currentSession();
+  if (!sess || !sess.queue.length) {
+    sess = S.session = { day: dayKey(), queue: buildQueue(), ms: 0, startCount: logDay().count };
+    if (sess.queue.length) bump('blocks');
+    save();
+  }
+  cur = null;
+  if (!sess.queue.length) { finishDay(); return; }
+  lastInteract = Date.now();
+  scheduleSync(0);
+  go('session');
+}
+const blockMs = () => S.settings.blockMinutes * 60000;
+// Nach einem Sync kann eine Karte schon auf dem anderen Gerät erledigt sein.
+function pruneQueue(sess) {
+  const t = plan();
+  while (sess.queue.length) {
+    const it = sess.queue[0];
+    if (it.t === 'new' ? introduced(it.w) : (!S.cards[it.k] || S.cards[it.k].due > t)) sess.queue.shift();
+    else break;
+  }
+}
+function nextStep() {
+  const sess = currentSession();
+  if (!sess) { go('home'); return; }
+  pruneQueue(sess);
+  if (!sess.queue.length) {
+    if (buildQueue().length) endBlock(); else finishDay();
+  } else if (sess.ms >= blockMs()) endBlock();
+  else renderSession();
+}
+function endBlock() {
+  const sess = currentSession();
+  const answers = sess ? logDay().count - (sess.startCount || 0) : 0;
+  S.session = null; save(); cur = null; view = 'done';
+  scheduleSync(0);
+  const c = queueCounts(buildQueue());
+  const left = c.n + c.l + c.r;
+  app.innerHTML = `<div class="card done">
+    <div class="big">✅</div>
+    <h2>Block geschafft!</h2>
+    <p class="muted">${answers} Antworten in diesem Block</p>
+    <p>Heute noch <b>${left}</b> Karten – ca. ${blocksLeft(c)} ${blocksLeft(c) === 1 ? 'Block' : 'Blöcke'}.</p>
+    <div class="actions">
+      <button class="btn" onclick="go('home')">Später weiter</button>
+      <button class="btn primary" onclick="startSession()">Nächster Block</button>
+    </div>
+  </div>`;
+}
+function fmtLeft(ms) {
+  const s = Math.max(0, Math.ceil(ms / 1000));
+  return `${Math.floor(s / 60)}:${pad(s % 60)}`;
+}
+document.addEventListener('pointerdown', () => lastInteract = Date.now());
+document.addEventListener('keydown', () => lastInteract = Date.now());
+setInterval(() => {
+  if (view !== 'session' || document.hidden || Date.now() - lastInteract > 90000) return;
+  const sess = currentSession();
+  if (!sess) return;
+  sess.ms = (sess.ms || 0) + 1000;
+  const bar = document.getElementById('blockbar'), txt = document.getElementById('blocktime');
+  if (bar) bar.style.width = Math.min(100, sess.ms / blockMs() * 100) + '%';
+  if (txt) txt.textContent = fmtLeft(blockMs() - sess.ms);
+}, 1000);
+function finishDay() {
+  const L = logDay(); L.done = true; S.session = null; save();
+  const st = streak();
+  cur = null;
+  scheduleSync(0);
+  view = 'done';
+  app.innerHTML = `<div class="card done">
+    <div class="big">🎉</div>
+    <h2>Geschafft für heute!</h2>
+    <p class="muted">${L.new} neue Wörter · ${L.count} Antworten</p>
+    <p style="font-size:22px;font-weight:700">🔥 ${st} ${st === 1 ? 'Tag' : 'Tage'} Streak</p>
+    <div class="actions"><button class="btn primary" onclick="go('home')">Zur Übersicht</button></div>
+  </div>`;
+}
+function renderSession() {
+  const sess = currentSession();
+  if (!sess) { go('home'); return; }
+  pruneQueue(sess);
+  if (!sess.queue.length) { nextStep(); return; }
+  const item = sess.queue[0];
+  if (!cur || cur.item !== item) cur = { item, revealed: false, result: null, input: '' };
+  const c = queueCounts(sess.queue);
+  const top = `<div class="topline">
+    <button class="btn" style="padding:6px 12px" onclick="go('home')" title="Pause (Esc)">✕</button>
+    <div class="bar"><i id="blockbar" style="width:${Math.min(100, (sess.ms || 0) / blockMs() * 100)}%;background:var(--accent)"></i></div>
+    <span class="timeleft" id="blocktime" title="Restzeit in diesem Block">${fmtLeft(blockMs() - (sess.ms || 0))}</span>
+    <div class="qc"><span class="n" title="Neu">${c.n}</span><span class="l" title="Lernen">${c.l}</span><span class="r" title="Wiederholen">${c.r}</span></div>
+  </div>`;
+
+  if (item.t === 'new') {
+    const [pl, de] = word(item.w);
+    app.innerHTML = top + `<div class="card quiz">
+      <span class="badge new">Neues Wort · #${item.w + 1}</span>
+      <div class="prompt">${esc(pl)}</div>
+      ${speakBtn(item.w)}
+      <div class="divider"></div>
+      <div class="answer">${esc(de)}</div>
+      <div class="actions"><button class="btn primary" onclick="introDone()">Verstanden, weiter ↵</button></div>
+    </div>`;
+    if (S.settings.autoAudio) speak(pl);
+    return;
+  }
+
+  const k = item.k, i = idxOf(k), dir = dirOf(k), card = S.cards[k];
+  const [pl, de] = word(i);
+  const q = dir === 'pd' ? pl : de, a = dir === 'pd' ? de : pl;
+  const badge = dir === 'pd' ? 'Polnisch → Deutsch' : 'Deutsch → Polnisch';
+  const typeMode = S.settings.mode === 'type';
+  let body = `<span class="badge">${badge}</span><div class="prompt">${esc(q)}</div>`;
+  if (dir === 'pd') body += speakBtn(i);
+
+  if (typeMode) {
+    const r = cur.result;
+    const cls = r ? (r.lvl >= 2 ? 'right' : r.lvl === 1 ? 'close' : 'wrong') : '';
+    body += `<div><input class="ans ${cls}" id="ans" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+      placeholder="${dir === 'pd' ? 'Deutsch eingeben…' : 'Polnisch (ohne Sonderzeichen ok)…'}" value="${esc(cur.input)}" ${r ? 'readonly' : ''}></div>`;
+    if (dir === 'dp' && !r && S.settings.charKeys) body += `<div class="chars">${'ąćęłńóśźż'.split('').map(ch => `<button tabindex="-1" onmousedown="event.preventDefault();insertChar('${ch}')">${ch}</button>`).join('')}</div>`;
+    if (r) {
+      const msg = r.other ? '✓ Auch richtig – gesucht war aber:' :
+        r.lvl >= 2 ? '✓ Richtig!' : r.lvl === 1 ? '≈ Fast richtig (Tippfehler?)' :
+        cur.input.trim() ? '✗ Leider falsch' : '✗ Lösung:';
+      body += `<div class="fb ${cls}">${msg}</div><div class="answer">${esc(a)}</div>`;
+      if (dir === 'dp') body += speakBtn(i);
+      body += rateButtons(card, [1, 2, 3, 3][r.lvl]);
+    } else {
+      body += `<div class="actions">
+        <button class="btn" onclick="checkAnswer(true)">Weiß nicht</button>
+        <button class="btn primary" onclick="checkAnswer()">Prüfen ↵</button></div>`;
+    }
+  } else {
+    if (cur.revealed) {
+      body += `<div class="divider"></div><div class="answer">${esc(a)}</div>`;
+      if (dir === 'dp') body += speakBtn(i);
+      body += rateButtons(card, 3);
+    } else {
+      body += `<div class="actions"><button class="btn primary" onclick="reveal()">Antwort zeigen (Leertaste)</button></div>`;
+    }
+  }
+  app.innerHTML = top + `<div class="card quiz">${body}</div>`;
+  const inp = document.getElementById('ans');
+  if (inp) {
+    inp.addEventListener('input', () => cur.input = inp.value);
+    if (!cur.result) inp.focus();
+  }
+  if (dir === 'pd' && S.settings.autoAudio && !cur.spoke) { cur.spoke = true; speak(pl); }
+}
+function rateButtons(card, sug) {
+  const t = plan();
+  cur.sug = sug;
+  const names = ['', 'Nochmal', 'Schwer', 'Gut', 'Einfach'];
+  return `<div class="rates">${[1, 2, 3, 4].map(r => `<button class="rate r${r} ${r === sug ? 'sug' : ''}" onclick="rate(${r})">
+      ${names[r]}<small>${fmtIvl(schedule(card, r, t))}</small><kbd>${r}</kbd></button>`).join('')}</div>
+    <div class="keys muted small">Enter = ${names[sug]} · Tasten 1–4</div>`;
+}
+function insertChar(ch) {
+  const inp = document.getElementById('ans');
+  if (!inp) return;
+  const s = inp.selectionStart, e = inp.selectionEnd;
+  inp.value = inp.value.slice(0, s) + ch + inp.value.slice(e);
+  inp.selectionStart = inp.selectionEnd = s + 1;
+  cur.input = inp.value; inp.focus();
+}
+function checkAnswer(giveUp) {
+  const k = cur.item.k;
+  if (giveUp) cur.input = '';
+  cur.result = giveUp ? { lvl: 0 } : grade(cur.input, idxOf(k), dirOf(k));
+  renderSession();
+  if (dirOf(k) === 'dp' && S.settings.autoAudio) speak(word(idxOf(k))[0]);
+}
+function reveal() {
+  cur.revealed = true;
+  renderSession();
+  const k = cur.item.k;
+  if (dirOf(k) === 'dp' && S.settings.autoAudio) speak(word(idxOf(k))[0]);
+}
+function introDone() {
+  const sess = currentSession(), item = sess.queue[0], i = item.w, t = plan();
+  const primary = S.settings.dirs === 'dp' ? 'dp' : 'pd', other = primary === 'pd' ? 'dp' : 'pd';
+  S.cards[i + ':' + primary] = newCard(t);
+  if (!S.cards[i + ':' + other]) S.cards[i + ':' + other] = newCard(t + 1); // Gegenrichtung ab dem nächsten Lerntag
+  bump('new');
+  sess.queue.shift();
+  sess.queue.splice(Math.min(3, sess.queue.length), 0, { t: 'card', k: i + ':' + primary });
+  save(); cur = null; scheduleSync(120000); nextStep();
+}
+function rate(r) {
+  const sess = currentSession(), k = sess.queue[0].k, t = plan();
+  const old = S.cards[k];
+  const res = schedule(old, r, t);
+  const c = res.c;
+  if (c.s === 'review' && c.ivl >= 3 && res.rq == null) { // etwas Zufall, damit nicht alles am selben Tag fällig wird
+    c.ivl = Math.max(1, c.ivl + Math.round(c.ivl * 0.05 * (Math.random() * 2 - 1)));
+    c.due = t + c.ivl;
+  }
+  c.reps++; c.last = t; c.u = Date.now();
+  S.cards[k] = c;
+  if (old.s === 'review') bump('rev');
+  bump('count');
+  sess.queue.shift();
+  if (res.rq != null) sess.queue.splice(Math.min(res.rq, sess.queue.length), 0, { t: 'card', k });
+  save(); cur = null; scheduleSync(120000);
+  nextStep();
+}
+
+document.addEventListener('keydown', e => {
+  if (view !== 'session' || !cur) return;
+  if (e.ctrlKey || e.altKey || e.metaKey) return;
+  const inInput = e.target.tagName === 'INPUT' && !e.target.readOnly;
+  if (e.key === 'Escape') { go('home'); return; }
+  if (cur.item.t === 'new') {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); introDone(); }
+    else if (e.key === 'a' || e.key === 'A') speak(word(cur.item.w)[0]);
+    return;
+  }
+  const answered = S.settings.mode === 'type' ? !!cur.result : cur.revealed;
+  if (!answered) {
+    if (S.settings.mode === 'type') { if (e.key === 'Enter' && inInput) { e.preventDefault(); checkAnswer(); } }
+    else if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); reveal(); }
+    if (!inInput && (e.key === 'a' || e.key === 'A') && dirOf(cur.item.k) === 'pd') speak(word(idxOf(cur.item.k))[0]);
+    return;
+  }
+  if (inInput) return;
+  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); rate(cur.sug || 3); }
+  else if ('1234'.includes(e.key) && e.key.length === 1) { e.preventDefault(); rate(+e.key); }
+  else if (e.key === 'a' || e.key === 'A') speak(word(idxOf(cur.item.k))[0]);
+});
+
+// ---------- Wortliste ----------
+let wordFilter = '';
+function statusOf(i) {
+  const t = plan();
+  const cs = ['pd', 'dp'].filter(dirEnabled).map(d => S.cards[i + ':' + d]).filter(Boolean);
+  if (!cs.length) return '<span class="st new">neu</span>';
+  if (cs.some(c => c.s !== 'review')) return '<span class="st learn">lernen</span>';
+  const next = Math.min(...cs.map(c => c.due)) - t;
+  const ivl = Math.min(...cs.map(c => c.ivl));
+  return `<span class="st rev" title="Intervall ${ivl} Tage">${next <= 0 ? 'fällig' : 'in ' + next + ' T'}</span>`;
+}
+function renderWords() {
+  app.innerHTML = `<div class="card">
+    <input class="search" id="wsearch" placeholder="Suchen (Polnisch oder Deutsch)…" value="${esc(wordFilter)}">
+    <table><thead><tr><th>#</th><th>Polnisch</th><th>Deutsch</th><th>Status</th><th></th></tr></thead><tbody id="wbody"></tbody></table>
+  </div>`;
+  const s = document.getElementById('wsearch');
+  s.addEventListener('input', () => { wordFilter = s.value; fillWords(); });
+  fillWords();
+}
+function fillWords() {
+  const f = plain(wordFilter.toLowerCase().trim());
+  let html = '';
+  for (let i = 0; i < WORDS.length; i++) {
+    const [pl, de] = word(i);
+    if (f && !plain((pl + ' ' + de).toLowerCase()).includes(f)) continue;
+    html += `<tr><td class="num">${i + 1}</td><td class="pl">${esc(pl)}</td><td>${esc(de)}${S.overrides[i] && S.overrides[i][0] != null ? ' <span class="muted small">(bearbeitet)</span>' : ''}</td>
+      <td>${statusOf(i)}</td><td><button class="edit" title="Bearbeiten" onclick="editWord(${i})">✎</button></td></tr>`;
+  }
+  document.getElementById('wbody').innerHTML = html || '<tr><td colspan="5" class="muted">Nichts gefunden.</td></tr>';
+}
+function editWord(i) {
+  const [pl, de] = word(i);
+  const npl = prompt('Polnisch (Alternativen mit " / " trennen):', pl);
+  if (npl === null) return;
+  const nde = prompt('Deutsch (Alternativen mit " / " trennen, Hinweise in Klammern):', de);
+  if (nde === null) return;
+  if (npl.trim() === WORDS[i][0] && nde.trim() === WORDS[i][1]) S.overrides[i] = [null, null, Date.now()];
+  else S.overrides[i] = [npl.trim(), nde.trim(), Date.now()];
+  save(); fillWords(); scheduleSync(0);
+}
+
+// ---------- Einstellungen ----------
+function renderSettings() {
+  const st = S.settings;
+  const seg = (key, opts) => `<div class="seg">${opts.map(([v, l]) =>
+    `<button class="${st[key] === v ? 'on' : ''}" onclick="setSetting('${key}', ${JSON.stringify(v).replace(/"/g, '&quot;')})">${l}</button>`).join('')}</div>`;
+  app.innerHTML = `<div class="card">
+    <div class="set"><div><label>Neue Wörter pro Tag</label><div class="d">Bei 15 hast du alle 1000 Wörter in ca. ${Math.ceil(1000 / Math.max(1, st.newPerDay))} Tagen gesehen.</div></div>
+      <input type="number" min="0" max="200" value="${st.newPerDay}" onchange="setSetting('newPerDay', Math.max(0, +this.value || 0))"></div>
+    <div class="set"><div><label>Länge eines Lernblocks (Minuten)</label><div class="d">Nach Ablauf der Zeit endet der Block mit der aktuellen Karte. Der Rest bleibt für den nächsten Block.</div></div>
+      <input type="number" min="1" max="60" value="${st.blockMinutes}" onchange="setSetting('blockMinutes', Math.min(60, Math.max(1, +this.value || 5)))"></div>
+    <div class="set"><div><label>Max. Wiederholungen pro Tag</label><div class="d">Schützt vor riesigen Stapeln nach Pausen.</div></div>
+      <input type="number" min="10" max="9999" value="${st.maxReviews}" onchange="setSetting('maxReviews', Math.max(10, +this.value || 10))"></div>
+    <div class="set"><div><label>Antwortmodus</label><div class="d">Tippen wird automatisch geprüft, Aufdecken wie bei Anki.</div></div>
+      ${seg('mode', [['type', '⌨ Tippen'], ['flip', '🂠 Aufdecken']])}</div>
+    <div class="set"><div><label>Richtungen</label><div class="d">Bei „Beide“ kommt die Gegenrichtung ab dem Tag nach dem ersten Lernen dazu.</div></div>
+      ${seg('dirs', [['both', 'Beide'], ['pd', 'PL → DE'], ['dp', 'DE → PL']])}</div>
+    <div class="set"><div><label>Aussprache automatisch abspielen</label><div class="d">${plVoice ? 'Stimme: ' + esc(plVoice.name) : 'Keine polnische Stimme gefunden. In Windows unter Einstellungen → Zeit und Sprache → Sprache „Polnisch“ inkl. Sprachausgabe installieren, oder Microsoft Edge verwenden.'}</div></div>
+      ${seg('autoAudio', [[true, 'An'], [false, 'Aus']])}</div>
+    <div class="set"><div><label>Tasten für Sonderzeichen</label><div class="d">Sonderzeichen sind nie nötig: „zolw“ zählt genauso wie „żółw“. Die Tasten sind nur optional.</div></div>
+      ${seg('charKeys', [[false, 'Aus'], [true, 'An']])}</div>
+  </div>
+  ${syncCard()}
+  <div class="card">
+    <div class="set"><div><label>Backup exportieren</label><div class="d">Sichert deinen Fortschritt als Datei.</div></div>
+      <button class="btn" onclick="exportData()">Exportieren</button></div>
+    <div class="set"><div><label>Backup importieren</label><div class="d">Ersetzt den aktuellen Fortschritt.</div></div>
+      <button class="btn" onclick="document.getElementById('importFile').click()">Importieren</button></div>
+    <div class="set"><div><label>Alles zurücksetzen</label><div class="d">Löscht Fortschritt, Streak und Bearbeitungen.</div></div>
+      <button class="btn" style="color:var(--bad)" onclick="resetAll()">Zurücksetzen</button></div>
+  </div>`;
+}
+function setSetting(key, v) {
+  S.settings[key] = v;
+  if (SYNCED_SETTINGS.includes(key)) {
+    S.settingsU = Date.now();
+    S.session = null; // Block mit den neuen Einstellungen neu zusammenstellen
+    scheduleSync(0);
+  }
+  save(); renderSettings();
+}
+function exportData() {
+  const blob = new Blob([JSON.stringify(S, null, 1)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `polnisch-backup-${dayKey()}.json`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+document.getElementById('importFile').addEventListener('change', async e => {
+  const f = e.target.files[0]; e.target.value = '';
+  if (!f) return;
+  try {
+    const data = JSON.parse(await f.text());
+    if (!data.cards || !data.log) throw new Error('Keine gültige Backup-Datei.');
+    if (!confirm('Aktuellen Fortschritt durch das Backup ersetzen? Das gilt auch für deine anderen Geräte.')) return;
+    data.gen = Date.now();
+    localStorage.setItem(STORE, JSON.stringify(data));
+    S = load(); save(); go('home'); scheduleSync(0);
+  } catch (err) { alert('Import fehlgeschlagen: ' + err.message); }
+});
+function resetAll() {
+  if (!confirm('Wirklich den gesamten Fortschritt löschen?')) return;
+  if (!confirm('Sicher? Das kann nicht rückgängig gemacht werden. (Vorher exportieren?)')) return;
+  localStorage.removeItem(STORE); S = load(); S.gen = Date.now(); save(); go('home'); scheduleSync(0);
+}
+
+// Tageswechsel erkennen, wenn die Seite lange offen bleibt
+let lastDay = dayKey();
+setInterval(() => { if (dayKey() !== lastDay) { lastDay = dayKey(); if (view === 'home') renderHome(); } }, 60000);
+
+if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
+go('home');
+initSync();
+</script>
+</body>
+</html>
