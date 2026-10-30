@@ -164,9 +164,13 @@ function syncCard() {
       ${syncState.showQr ? `<div class="qr-box">${setupQrSvg(cfg)}</div>
         <ol class="steps">
           <li>Mit der iPhone-Kamera scannen und den Link in Safari öffnen.</li>
-          <li>Den Schritten auf dem iPhone folgen.</li>
+          <li>Dort auf <b>Einrichtungscode kopieren</b> tippen.</li>
+          <li><b>Polnisch</b> vom Home-Bildschirm öffnen (falls nötig erst in Safari über Teilen → Zum Home-Bildschirm hinzufügen), dann <b>Einfügen</b> und <b>Verbinden</b>.</li>
         </ol>
-        <p class="note">Der Code enthält deinen Zugangs-Token: nicht fotografieren oder weitergeben.</p>` : ''}
+        <p class="note">Oder der Einrichtungscode als Text, falls der QR-Code nicht klappt:</p>
+        <textarea class="field" id="setupCodeOut" rows="3" readonly onclick="this.select()">${esc(encodeSetup(cfg))}</textarea>
+        <div class="actions" style="justify-content:flex-start;margin-top:8px"><button class="btn" id="copyOutBtn" onclick="copySetupOut()">Code kopieren</button></div>
+        <p class="note">QR-Code und Einrichtungscode enthalten deinen Zugangs-Token: nicht fotografieren oder weitergeben.</p>` : ''}
       <div class="set"><div><label>Verbindung trennen</label><div class="d">Entfernt den Token von diesem Gerät. Dein Fortschritt bleibt erhalten.</div></div>
         <button class="btn" onclick="syncDisconnect()">Trennen</button></div>
     </div>`;
@@ -215,6 +219,16 @@ function toggleQr() {
   syncState.showQr = !syncState.showQr;
   renderSettings();
 }
+async function copySetupOut() {
+  const box = document.getElementById('setupCodeOut'), btn = document.getElementById('copyOutBtn');
+  box.select();
+  try {
+    await navigator.clipboard.writeText(box.value);
+  } catch (e) {
+    document.execCommand('copy');
+  }
+  btn.textContent = 'Kopiert ✓';
+}
 // Der Code aus dem QR-Link enthält den Token, also sofort aus der Adresse entfernen.
 function takeSetupCode() {
   const m = /^#setup=(.+)$/.exec(location.hash);
@@ -239,8 +253,8 @@ function renderSetup(code) {
       <ol class="steps">
         ${code ? `<li><button class="btn primary" id="copyBtn" onclick="copySetup()">Einrichtungscode kopieren</button></li>`
           : `<li>Am Laptop unter Einstellungen → Sync mit GitHub den QR-Code zeigen, scannen und hierher zurückkommen.</li>`}
-        <li>In Safari auf <b>Teilen</b> tippen, dann <b>Zum Home-Bildschirm</b>.</li>
-        <li><b>Polnisch</b> vom Home-Bildschirm öffnen und den Code einfügen.</li>
+        <li>Falls die App noch nicht installiert ist: in Safari auf <b>Teilen</b> tippen, dann <b>Zum Home-Bildschirm</b>.</li>
+        <li><b>Polnisch</b> vom Home-Bildschirm öffnen, auf <b>Einfügen</b> und dann auf <b>Verbinden</b> tippen.</li>
       </ol>
       ${skip}
     </div>`;
@@ -248,7 +262,12 @@ function renderSetup(code) {
   }
   app.innerHTML = `<div class="card">
     <h2 style="margin-top:0">Gerät verbinden</h2>
-    <p class="muted">Füge den Einrichtungscode ein. Du bekommst ihn am Laptop unter Einstellungen → Sync mit GitHub.</p>
+    <p class="muted">So bekommst du den Einrichtungscode:</p>
+    <ol class="steps">
+      <li>Am Laptop die App öffnen: Einstellungen → Sync mit GitHub → <b>QR-Code zeigen</b>. Falls dort nur Eingabefelder stehen, erst das Repo und den Token eintragen und verbinden.</li>
+      <li>Den QR-Code mit der iPhone-Kamera scannen. Er öffnet sich in Safari.</li>
+      <li>Dort auf <b>Einrichtungscode kopieren</b> tippen und hierher zurückkommen.</li>
+    </ol>
     <textarea class="field" id="setupInput" rows="3" placeholder="Einrichtungscode" autocapitalize="off" autocorrect="off" spellcheck="false">${esc(code || '')}</textarea>
     <div class="d small syncerr" id="syncStatus" style="margin-top:8px"></div>
     <div class="actions" style="justify-content:flex-start;margin-top:12px">
