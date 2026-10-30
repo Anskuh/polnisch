@@ -1,6 +1,6 @@
 // Offline-Fähigkeit: immer zuerst das Netz (damit Updates sofort ankommen), sonst die gespeicherte Version.
 const CACHE = 'polnisch-v1';
-const FILES = ['./', 'index.html', 'words.js', 'sync.js', 'manifest.webmanifest', 'icon.png', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'];
+const FILES = ['./', 'index.html', 'words.js', 'qrcode.js', 'sync.js','manifest.webmanifest', 'icon.png', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting()));

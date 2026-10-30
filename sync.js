@@ -151,6 +151,14 @@ function syncCard() {
       <div class="set"><div><label>Sync mit GitHub</label><div class="d">Verbunden mit ${esc(cfg.repo)}</div>
         <div class="d ${syncState.error ? 'syncerr' : ''}" id="syncStatus">${esc(syncState.msg)}</div></div>
         <button class="btn" onclick="syncNow()">Jetzt syncen</button></div>
+      <div class="set"><div><label>iPhone verbinden</label><div class="d">Zeigt einen QR-Code mit dem Link zur App und den Sync-Daten.</div></div>
+        <button class="btn" onclick="toggleQr()">${syncState.showQr ? 'QR-Code ausblenden' : 'QR-Code zeigen'}</button></div>
+      ${syncState.showQr ? `<div class="qr-box">${setupQrSvg(cfg)}</div>
+        <ol class="steps">
+          <li>Mit der iPhone-Kamera scannen und den Link in Safari öffnen.</li>
+          <li>Den Schritten auf dem iPhone folgen.</li>
+        </ol>
+        <p class="note">Der Code enthält deinen Zugangs-Token: nicht fotografieren oder weitergeben.</p>` : ''}
       <div class="set"><div><label>Verbindung trennen</label><div class="d">Entfernt den Token von diesem Gerät. Dein Fortschritt bleibt erhalten.</div></div>
         <button class="btn" onclick="syncDisconnect()">Trennen</button></div>
     </div>`;
@@ -164,20 +172,110 @@ function syncCard() {
     <div class="actions" style="justify-content:flex-start;margin-top:12px"><button class="btn primary" onclick="syncConnect()">Verbinden</button></div>
   </div>`;
 }
+async function connectWith(repo, token) {
+  localStorage.setItem(SYNC_KEY, JSON.stringify({ repo, token }));
+  await syncNow();
+  if (!syncState.error) return true;
+  const msg = syncState.msg; // falsche Angaben nicht speichern
+  localStorage.removeItem(SYNC_KEY);
+  setSyncMsg(msg, true);
+  return false;
+}
 async function syncConnect() {
   const repo = document.getElementById('syncRepo').value.trim().replace(/^https:\/\/github\.com\//, '').replace(/\.git$/, '').replace(/\/$/, '');
   const token = document.getElementById('syncToken').value.trim();
   if (!/^[\w.-]+\/[\w.-]+$/.test(repo)) { setSyncMsg('Bitte im Format benutzername/repo eintragen.', true); return; }
   if (!token) { setSyncMsg('Bitte den Token eintragen.', true); return; }
-  localStorage.setItem(SYNC_KEY, JSON.stringify({ repo, token }));
-  await syncNow();
-  if (syncState.error) { // falsche Angaben nicht speichern
-    const msg = syncState.msg;
-    localStorage.removeItem(SYNC_KEY);
-    setSyncMsg(msg, true);
+  if (await connectWith(repo, token)) renderSettings();
+}
+
+// ---------- iPhone einrichten per QR-Code ----------
+const APP_URL = 'https://anskuh.github.io/polnisch/';
+const encodeSetup = cfg => btoa(JSON.stringify({ repo: cfg.repo, token: cfg.token }));
+function decodeSetup(code) {
+  const cfg = JSON.parse(atob(code.trim()));
+  if (!/^[\w.-]+\/[\w.-]+$/.test(cfg.repo || '') || !cfg.token) throw new Error('unvollständig');
+  return cfg;
+}
+function setupQrSvg(cfg) {
+  const qr = qrcode(0, 'L');
+  qr.addData(`${APP_URL}#setup=${encodeURIComponent(encodeSetup(cfg))}`);
+  qr.make();
+  return qr.createSvgTag({ scalable: true, margin: 2 });
+}
+function toggleQr() {
+  syncState.showQr = !syncState.showQr;
+  renderSettings();
+}
+// Der Code aus dem QR-Link enthält den Token, also sofort aus der Adresse entfernen.
+function takeSetupCode() {
+  const m = /^#setup=(.+)$/.exec(location.hash);
+  if (!m) return null;
+  history.replaceState(null, '', location.pathname + location.search);
+  return decodeURIComponent(m[1]);
+}
+function isIos() { return /iPad|iPhone|iPod/.test(navigator.userAgent); }
+function isInstalled() { return navigator.standalone === true || matchMedia('(display-mode: standalone)').matches; }
+function needsSetup() {
+  return !syncCfg() && !Object.keys(S.cards).length && (isIos() || isInstalled()) && !localStorage.getItem('polnisch-nosetup');
+}
+let setupCode = null;
+function renderSetup(code) {
+  setupCode = code;
+  view = 'setup';
+  const skip = `<p class="note"><button class="link" onclick="skipSetup()">Ohne Sync weiter</button></p>`;
+  // Auf dem iPhone haben Safari und die installierte App getrennte Speicher, der Code muss also mit hinüber.
+  if (isIos() && !isInstalled()) {
+    app.innerHTML = `<div class="card">
+      <h2 style="margin-top:0">App aufs iPhone holen</h2>
+      <ol class="steps">
+        ${code ? `<li><button class="btn primary" id="copyBtn" onclick="copySetup()">Einrichtungscode kopieren</button></li>`
+          : `<li>Am Laptop unter Einstellungen → Sync mit GitHub den QR-Code zeigen, scannen und hierher zurückkommen.</li>`}
+        <li>In Safari auf <b>Teilen</b> tippen, dann <b>Zum Home-Bildschirm</b>.</li>
+        <li><b>Polnisch</b> vom Home-Bildschirm öffnen und den Code einfügen.</li>
+      </ol>
+      ${skip}
+    </div>`;
     return;
   }
-  renderSettings();
+  app.innerHTML = `<div class="card">
+    <h2 style="margin-top:0">Gerät verbinden</h2>
+    <p class="muted">Füge den Einrichtungscode ein. Du bekommst ihn am Laptop unter Einstellungen → Sync mit GitHub.</p>
+    <textarea class="field" id="setupInput" rows="3" placeholder="Einrichtungscode" autocapitalize="off" autocorrect="off" spellcheck="false">${esc(code || '')}</textarea>
+    <div class="d small syncerr" id="syncStatus" style="margin-top:8px"></div>
+    <div class="actions" style="justify-content:flex-start;margin-top:12px">
+      ${navigator.clipboard && navigator.clipboard.readText ? `<button class="btn" onclick="pasteSetup()">Einfügen</button>` : ''}
+      <button class="btn primary" onclick="connectSetup()">Verbinden</button>
+    </div>
+    ${skip}
+  </div>`;
+}
+async function copySetup() {
+  const btn = document.getElementById('copyBtn');
+  try {
+    await navigator.clipboard.writeText(setupCode);
+    btn.textContent = 'Kopiert ✓';
+  } catch (e) {
+    btn.textContent = 'Kopieren fehlgeschlagen, bitte nochmal tippen';
+  }
+}
+async function pasteSetup() {
+  try {
+    document.getElementById('setupInput').value = await navigator.clipboard.readText();
+  } catch (e) {
+    setSyncMsg('Bitte lange ins Feld tippen und „Einsetzen“ wählen.', true);
+  }
+}
+async function connectSetup() {
+  let cfg;
+  try { cfg = decodeSetup(document.getElementById('setupInput').value); }
+  catch (e) { setSyncMsg('Das ist kein gültiger Einrichtungscode.', true); return; }
+  setSyncMsg('Verbinde…', false);
+  if (await connectWith(cfg.repo, cfg.token)) go('home');
+}
+function skipSetup() {
+  localStorage.setItem('polnisch-nosetup', '1');
+  go('home');
 }
 function syncDisconnect() {
   localStorage.removeItem(SYNC_KEY);

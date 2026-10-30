@@ -45,6 +45,10 @@ button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulat
 .field { width: 100%; font: inherit; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); color: var(--text); margin-top: 8px; }
 .syncerr { color: var(--bad); }
 .syncok { color: var(--good); }
+.qr-box { background: #fff; padding: 10px; border-radius: 10px; width: min(300px, 100%); margin: 12px auto; }
+.qr-box svg { display: block; width: 100%; height: auto; }
+.steps { padding-left: 20px; }
+.steps li { margin-bottom: 12px; }
 header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
 header h1 { font-size: 18px; margin: 0; flex: 1; display: flex; align-items: center; gap: 8px; cursor: pointer; }
 .flag { width: 22px; height: 14px; border-radius: 2px; overflow: hidden; display: inline-flex; flex-direction: column; box-shadow: 0 0 0 1px var(--border); }
@@ -184,6 +188,7 @@ td.pl { font-weight: 600; }
 <input type="file" id="importFile" accept=".json,application/json" hidden>
 
 <script src="words.js"></script>
+<script src="qrcode.js"></script>
 <script src="sync.js"></script>
 <script>
 // ---------- Speicher ----------
@@ -889,7 +894,8 @@ let lastDay = dayKey();
 setInterval(() => { if (dayKey() !== lastDay) { lastDay = dayKey(); if (view === 'home') renderHome(); } }, 60000);
 
 if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
-go('home');
+const setupFromLink = takeSetupCode();
+if (setupFromLink || needsSetup()) renderSetup(setupFromLink); else go('home');
 initSync();
 </script>
 </body>
