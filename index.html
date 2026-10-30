@@ -416,18 +416,20 @@ function grade(raw, i, dir) {
 }
 
 // ---------- Sprachausgabe ----------
-let plVoice = null;
+let plVoice = null, plLocalVoice = null; // Online-Stimmen bleiben ohne Netz stumm
 function pickVoice() {
   if (!('speechSynthesis' in window)) return;
   const vs = speechSynthesis.getVoices();
   plVoice = vs.find(v => /^pl/i.test(v.lang) && /natural|online/i.test(v.name)) || vs.find(v => /^pl/i.test(v.lang)) || null;
+  plLocalVoice = vs.find(v => /^pl/i.test(v.lang) && v.localService) || null;
 }
 if ('speechSynthesis' in window) { pickVoice(); speechSynthesis.onvoiceschanged = () => { pickVoice(); if (view === 'session') renderSession(); }; }
 function speak(text) {
   if (!plVoice) return;
   speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(text.replace(/\s*\/\s*/g, ', ').replace(/…/g, ''));
-  u.voice = plVoice; u.lang = plVoice.lang; u.rate = 0.9;
+  u.voice = navigator.onLine ? plVoice : (plLocalVoice || plVoice);
+  u.lang = u.voice.lang; u.rate = 0.9;
   speechSynthesis.speak(u);
 }
 const speakBtn = i => plVoice ? `<button class="speak" title="Anhören (A)" onclick="speak(word(${i})[0])">🔊</button>` : '';
@@ -494,6 +496,7 @@ function renderHome() {
       </div>
       ${L.done ? '<span class="pill ok">Heute erledigt ✓</span>' : '<span class="pill open">Heute noch offen</span>'}
     </div>
+    ${!navigator.onLine ? `<p class="note">📴 Offline: Du kannst normal lernen. Dein Fortschritt wird gespeichert und später synchronisiert.</p>` : ''}
     ${missed ? `<p class="note">⏸ Du hast ${missed} ${missed === 1 ? 'Tag' : 'Tage'} pausiert – dein Lernplan wurde mitverschoben, damit sich nichts anstaut.</p>` : ''}
     ${done ? `<p style="margin:20px 0 12px">Du hast heute alles geschafft. Morgen stehen ca. <b>${tomorrow}</b> Karten an.</p>` : `
     <div class="counts">
@@ -893,7 +896,10 @@ function resetAll() {
 let lastDay = dayKey();
 setInterval(() => { if (dayKey() !== lastDay) { lastDay = dayKey(); if (view === 'home') renderHome(); } }, 60000);
 
-if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+  if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
+}
 const setupFromLink = takeSetupCode();
 if (setupFromLink || needsSetup()) renderSetup(setupFromLink); else go('home');
 initSync();

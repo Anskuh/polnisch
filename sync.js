@@ -73,11 +73,16 @@ function fromB64(b64) {
   return new TextDecoder().decode(Uint8Array.from(bin, ch => ch.charCodeAt(0)));
 }
 async function gh(cfg, method, body) {
-  const res = await fetch(`https://api.github.com/repos/${cfg.repo}/contents/${SYNC_FILE}`, {
-    method, cache: 'no-store',
-    headers: { Authorization: `Bearer ${cfg.token}`, Accept: 'application/vnd.github+json' },
-    body: body ? JSON.stringify(body) : undefined,
-  });
+  const abort = new AbortController();
+  const timeout = setTimeout(() => abort.abort(), 30000); // schlechtes Netz: nicht ewig hängen bleiben
+  let res;
+  try {
+    res = await fetch(`https://api.github.com/repos/${cfg.repo}/contents/${SYNC_FILE}`, {
+      method, cache: 'no-store', signal: abort.signal,
+      headers: { Authorization: `Bearer ${cfg.token}`, Accept: 'application/vnd.github+json' },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+  } finally { clearTimeout(timeout); }
   if (res.status === 401) throw new Error('Token ungültig oder abgelaufen.');
   if (res.status === 403) throw new Error('Keine Berechtigung: Der Token braucht „Contents: Read and write“ für dieses Repo.');
   return res;
@@ -115,6 +120,7 @@ async function syncNow() {
   if (!cfg) return;
   if (syncState.busy) { syncState.again = true; return; }
   syncState.busy = true;
+  let retry = false;
   clearTimeout(syncState.timer);
   setSyncMsg('Synchronisiere…', false);
   try {
@@ -123,11 +129,13 @@ async function syncNow() {
     setSyncMsg('Synchronisiert um ' + new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }), false);
     onSynced();
   } catch (e) {
-    const offline = e instanceof TypeError || !navigator.onLine;
+    const offline = e instanceof TypeError || e.name === 'AbortError' || !navigator.onLine;
     setSyncMsg(offline ? 'Offline: wird später synchronisiert.' : e.message, !offline);
+    if (offline) retry = true;
   }
   syncState.busy = false;
   if (syncState.again) { syncState.again = false; syncNow(); }
+  else if (retry) scheduleSync(120000); // das online-Ereignis ist auf dem iPhone unzuverlässig
 }
 function scheduleSync(delay) {
   if (!syncCfg()) return;
@@ -288,5 +296,6 @@ function initSync() {
     if (document.hidden) syncNow();
     else if (Date.now() - syncState.last > 60000) scheduleSync(0);
   });
-  window.addEventListener('online', () => scheduleSync(0));
+  window.addEventListener('online', () => { scheduleSync(0); if (view === 'home') renderHome(); });
+  window.addEventListener('offline', () => { if (view === 'home') renderHome(); });
 }
