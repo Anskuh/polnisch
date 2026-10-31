@@ -72,12 +72,12 @@ function fromB64(b64) {
   const bin = atob(b64.replace(/\s/g, ''));
   return new TextDecoder().decode(Uint8Array.from(bin, ch => ch.charCodeAt(0)));
 }
-async function gh(cfg, method, body) {
+async function gh(cfg, method, body, file = SYNC_FILE) {
   const abort = new AbortController();
   const timeout = setTimeout(() => abort.abort(), 30000); // schlechtes Netz: nicht ewig hängen bleiben
   let res;
   try {
-    res = await fetch(`https://api.github.com/repos/${cfg.repo}/contents/${SYNC_FILE}`, {
+    res = await fetch(`https://api.github.com/repos/${cfg.repo}/contents/${file}`, {
       method, cache: 'no-store', signal: abort.signal,
       headers: { Authorization: `Bearer ${cfg.token}`, Accept: 'application/vnd.github+json' },
       body: body ? JSON.stringify(body) : undefined,
@@ -304,7 +304,8 @@ function skipSetup() {
   localStorage.setItem('polnisch-nosetup', '1');
   go('home');
 }
-function syncDisconnect() {
+async function syncDisconnect() {
+  if (remindersOn()) await disableReminders(); // ohne Token ließe sich das Gerät später nicht mehr abmelden
   localStorage.removeItem(SYNC_KEY);
   syncState.msg = ''; syncState.error = false;
   renderSettings();

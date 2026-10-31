@@ -190,6 +190,7 @@ td.pl { font-weight: 600; }
 <script src="words.js"></script>
 <script src="qrcode.js"></script>
 <script src="sync.js"></script>
+<script src="reminders.js"></script>
 <script>
 // ---------- Speicher ----------
 const STORE = 'polnisch-srs-v1';
@@ -464,6 +465,7 @@ function renderHome() {
   const done = L.done && total === 0;
   const inProgress = sess && sess.queue.length > 0 && sess.ms > 0;
   const missed = missedDays();
+  updateBadge(L);
 
   let introducedN = 0, matureN = 0, learningN = 0;
   for (let i = 0; i < WORDS.length; i++) {
@@ -483,7 +485,7 @@ function renderHome() {
   } else {
     const label = inProgress ? 'Block fortsetzen' : `Block starten (${S.settings.blockMinutes} Min.)`;
     btn = `<button class="btn primary big" onclick="startSession()">${label}</button>
-      <p class="note" style="text-align:center">${L.blocks ? `${L.blocks} ${L.blocks === 1 ? 'Block' : 'Blöcke'} heute · ` : ''}noch ca. ${blocksLeft(c)} ${blocksLeft(c) === 1 ? 'Block' : 'Blöcke'}, um alles zu schaffen</p>`;
+      <p class="note" style="text-align:center">${L.blocks} von ${DAILY_BLOCKS} Blöcken heute · noch ca. ${blocksLeft(c)} ${blocksLeft(c) === 1 ? 'Block' : 'Blöcke'}, um alles zu schaffen</p>`;
   }
 
   app.innerHTML = `
@@ -848,6 +850,7 @@ function renderSettings() {
       ${seg('charKeys', [[false, 'Aus'], [true, 'An']])}</div>
   </div>
   ${syncCard()}
+  ${reminderCard()}
   <div class="card">
     <div class="set"><div><label>Backup exportieren</label><div class="d">Sichert deinen Fortschritt als Datei.</div></div>
       <button class="btn" onclick="exportData()">Exportieren</button></div>
@@ -903,6 +906,7 @@ if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.
 const setupFromLink = takeSetupCode();
 if (setupFromLink || needsSetup()) renderSetup(setupFromLink); else go('home');
 initSync();
+initReminders();
 </script>
 </body>
 </html>

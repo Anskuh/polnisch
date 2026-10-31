@@ -4,7 +4,7 @@
 const PREFIX = 'polnisch-';
 const META = PREFIX + 'meta';
 const CURRENT = 'current';
-const FILES = ['index.html', 'words.js', 'qrcode.js', 'sync.js', 'manifest.webmanifest', 'icon.png', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'];
+const FILES = ['index.html', 'words.js', 'qrcode.js', 'sync.js', 'reminders.js', 'manifest.webmanifest', 'icon.png', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'];
 const scoped = path => new URL(path, self.registration.scope).href;
 
 async function currentName() {
@@ -41,6 +41,27 @@ async function update() {
 
 self.addEventListener('install', e => e.waitUntil(update().then(() => self.skipWaiting())));
 self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
+
+// Erinnerungen: Jede Nachricht muss sichtbar werden, sonst entzieht iOS der App die Erlaubnis.
+self.addEventListener('push', e => {
+  let msg = {};
+  try { msg = e.data.json(); } catch (err) {}
+  const jobs = [self.registration.showNotification(msg.title || 'Polnisch', {
+    body: msg.body || 'Zeit für einen Block.',
+    icon: scoped('icon-192.png'),
+    tag: 'polnisch-reminder', // ersetzt eine ältere, damit sich nichts stapelt
+  })];
+  if (self.navigator.setAppBadge && typeof msg.left === 'number') jobs.push(self.navigator.setAppBadge(msg.left).catch(() => {}));
+  e.waitUntil(Promise.all(jobs));
+});
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  e.waitUntil((async () => {
+    const open = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    if (open.length) return open[0].focus();
+    return self.clients.openWindow(self.registration.scope);
+  })());
+});
 
 let checking = null;
 function checkForUpdate() {
