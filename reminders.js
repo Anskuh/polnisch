@@ -3,7 +3,6 @@
 const VAPID_PUBLIC = 'BOE3-DifZbwOTuJRuX5nTIhdPFH1a2-zw6Q9jbfkJTH1OpYu44IlyBSOAqF2VIDgm5Qr5QiQv1ThAM0NFpzuXS0';
 const PUSH_FILE = 'push.json';
 const REMINDER_KEY = 'polnisch-reminders'; // zuletzt angemeldeter Endpunkt, fehlt = aus
-const DAILY_BLOCKS = 5;
 const reminderState = { msg: '', error: false, busy: false };
 
 const pushSupported = () => (location.protocol === 'https:' || location.hostname === 'localhost')
@@ -87,15 +86,14 @@ function reminderCard() {
   const button = body ? '' : `<button class="btn ${on ? '' : 'primary'}" ${reminderState.busy ? 'disabled' : ''} onclick="${on ? 'disableReminders' : 'enableReminders'}()">${on ? 'Ausschalten' : 'Einschalten'}</button>`;
   return `<div class="card">
     <div class="set"><div><label>Erinnerungen</label>
-      <div class="d">${body || `Gegen 9, 12, 15, 18 und 20:30 Uhr, mit einem Wort zum Abfragen. Bist du schon im Plan oder heute fertig, bleibt das Handy still.`}</div>
+      <div class="d">${body || `Gegen 9, 12, 15, 18 und 20:30 Uhr, mit einem Wort zum Abfragen. Die geschätzten Blöcke des Tages werden auf diese Zeiten verteilt. Bist du im Plan oder fertig, bleibt das Handy still.`}</div>
       ${reminderState.msg ? `<div class="d ${reminderState.error ? 'syncerr' : ''}">${esc(reminderState.msg)}</div>` : ''}</div>
       ${button}</div>
   </div>`;
 }
 // Offene Blöcke als Zahl am App-Symbol.
-function updateBadge(L) {
+function updateBadge(left) {
   if (!navigator.setAppBadge || !remindersOn()) return;
-  const left = L.done ? 0 : Math.max(0, DAILY_BLOCKS - (L.blocks || 0));
   (left ? navigator.setAppBadge(left) : navigator.clearAppBadge()).catch(() => {});
 }
 // Das Handy kann die Anmeldung still erneuern. Dann muss der neue Endpunkt ins Repo.

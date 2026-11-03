@@ -212,7 +212,8 @@ function load() {
     settingsU: s.settingsU || 0,
     overrides: s.overrides || {},  // wortIndex -> [pl, de, geändertUm] (pl = null: zurückgesetzt)
     session: s.session || null,    // aktueller Block: { day, queue: [{t:'new', w} | {t:'card', k}], ms, startCount, w0 }
-    blockStats: s.blockStats || [], // letzte Blöcke dieses Geräts: { w: geschaffte Arbeit, ms } (nicht synchronisiert)
+    blockStats: s.blockStats || [], // letzte Blöcke dieses Geräts: { w: geschaffte Arbeit, ms, t }
+    peerStats: s.peerStats || {},   // dasselbe von den anderen Geräten, nur zum Weiterreichen für die Erinnerungen
   };
   if (out.v < 2) {
     if (s.cards) try { localStorage.setItem(STORE + '-backup', JSON.stringify(s)); } catch (e) {}
@@ -451,7 +452,7 @@ const app = document.getElementById('app');
 const estimateSec = c => c.n * 30 + c.l * 12 + c.r * 8;
 const queueWork = () => estimateSec(queueCounts(buildQueue()));
 // Eigenes Tempo aus den letzten Blöcken: geschaffte Arbeit pro Sekunde Lernzeit. Ein Block in Standardtempo
-// zählt mit, damit ein einzelner Ausreißer die Schätzung nicht umwirft.
+// zählt mit, damit ein einzelner Ausreißer die Schätzung nicht umwirft. notifier/reminder.mjs rechnet genauso.
 function blockRate() {
   const recent = S.blockStats.slice(-8), prior = S.settings.blockMinutes * 60;
   const work = recent.reduce((sum, b) => sum + b.w, 0), sec = recent.reduce((sum, b) => sum + b.ms, 0) / 1000;
@@ -460,7 +461,7 @@ function blockRate() {
 // Was ein Block weggeschafft hat. Wiederholte Fehler zählen mit, weil die Karte dann im Stapel bleibt.
 function recordBlock(sess) {
   if (!sess || sess.w0 == null || sess.ms < 30000) return;
-  S.blockStats = [...S.blockStats, { w: Math.max(0, sess.w0 - queueWork()), ms: sess.ms }].slice(-20);
+  S.blockStats = [...S.blockStats, { w: Math.max(0, sess.w0 - queueWork()), ms: sess.ms, t: Date.now() }].slice(-20);
 }
 function blocksLeft(c) {
   return Math.max(1, Math.ceil(estimateSec(c) / (blockRate() * S.settings.blockMinutes * 60) - 0.15));
@@ -480,7 +481,7 @@ function renderHome() {
   const done = L.done && total === 0;
   const inProgress = sess && sess.queue.length > 0 && sess.ms > 0;
   const missed = missedDays();
-  updateBadge(L);
+  updateBadge(done ? 0 : blocksLeft(c));
 
   let introducedN = 0, matureN = 0, learningN = 0;
   for (let i = 0; i < WORDS.length; i++) {
@@ -500,7 +501,7 @@ function renderHome() {
   } else {
     const label = inProgress ? 'Block fortsetzen' : `Block starten (${S.settings.blockMinutes} Min.)`;
     btn = `<button class="btn primary big" onclick="startSession()">${label}</button>
-      <p class="note" style="text-align:center">${L.blocks} von ${DAILY_BLOCKS} Blöcken heute · noch ca. ${blocksLeft(c)} ${blocksLeft(c) === 1 ? 'Block' : 'Blöcke'}, um alles zu schaffen</p>`;
+      <p class="note" style="text-align:center">${L.blocks ? `${L.blocks} ${L.blocks === 1 ? 'Block' : 'Blöcke'} heute · ` : ''}noch ca. ${blocksLeft(c)} ${blocksLeft(c) === 1 ? 'Block' : 'Blöcke'}, um alles zu schaffen</p>`;
   }
 
   app.innerHTML = `

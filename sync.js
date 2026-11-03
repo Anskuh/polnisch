@@ -26,7 +26,15 @@ function sortedObj(o) {
 function payload() {
   const settings = {};
   for (const k of SYNCED_SETTINGS) settings[k] = S.settings[k];
-  return { v: 2, gen: S.gen, cards: sortedObj(S.cards), log: sortedObj(S.log), overrides: sortedObj(S.overrides), settings, settingsU: S.settingsU };
+  const blockStats = sortedObj({ ...S.peerStats, [deviceId]: S.blockStats.slice(-8) });
+  return { v: 2, gen: S.gen, cards: sortedObj(S.cards), log: sortedObj(S.log), overrides: sortedObj(S.overrides), settings, settingsU: S.settingsU, blockStats };
+}
+// Jedes Gerät schreibt nur seine eigene Liste, die neuere gewinnt.
+const lastT = list => list && list.length ? list[list.length - 1].t || 0 : -1;
+function mergeStats(remote) {
+  for (const [dev, list] of Object.entries(remote || {})) {
+    if (dev !== deviceId && lastT(list) > lastT(S.peerStats[dev])) S.peerStats[dev] = list;
+  }
 }
 // Tageszähler pro Gerät: je Gerät gilt der höchste Stand, die Summe ergibt den Tag.
 function mergeDay(a, b) {
@@ -42,6 +50,7 @@ function mergeDay(a, b) {
   return out;
 }
 function mergeRemote(r) {
+  mergeStats(r.blockStats);
   const rGen = r.gen || 0;
   if (rGen > S.gen) { // Reset oder Import auf dem anderen Gerät: dessen Stand ersetzt alles
     S.gen = rGen; S.cards = r.cards; S.log = r.log; S.overrides = r.overrides || {}; S.session = null;
