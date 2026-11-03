@@ -211,7 +211,8 @@ function load() {
     settings: Object.assign({}, DEFAULT_SETTINGS, s.settings || {}),
     settingsU: s.settingsU || 0,
     overrides: s.overrides || {},  // wortIndex -> [pl, de, geändertUm] (pl = null: zurückgesetzt)
-    session: s.session || null,    // aktueller Block: { day, queue: [{t:'new', w} | {t:'card', k}], ms, startCount }
+    session: s.session || null,    // aktueller Block: { day, queue: [{t:'new', w} | {t:'card', k}], ms, startCount, w0 }
+    blockStats: s.blockStats || [], // letzte Blöcke dieses Geräts: { w: geschaffte Arbeit, ms } (nicht synchronisiert)
   };
   if (out.v < 2) {
     if (s.cards) try { localStorage.setItem(STORE + '-backup', JSON.stringify(s)); } catch (e) {}
@@ -446,9 +447,23 @@ function go(v) {
 const app = document.getElementById('app');
 
 // ---------- Startseite ----------
+// Anstehende Arbeit in Sekunden bei Standardtempo. Wie schnell du wirklich bist, lernt blockRate().
 const estimateSec = c => c.n * 30 + c.l * 12 + c.r * 8;
+const queueWork = () => estimateSec(queueCounts(buildQueue()));
+// Eigenes Tempo aus den letzten Blöcken: geschaffte Arbeit pro Sekunde Lernzeit. Ein Block in Standardtempo
+// zählt mit, damit ein einzelner Ausreißer die Schätzung nicht umwirft.
+function blockRate() {
+  const recent = S.blockStats.slice(-8), prior = S.settings.blockMinutes * 60;
+  const work = recent.reduce((sum, b) => sum + b.w, 0), sec = recent.reduce((sum, b) => sum + b.ms, 0) / 1000;
+  return (work + prior) / (sec + prior);
+}
+// Was ein Block weggeschafft hat. Wiederholte Fehler zählen mit, weil die Karte dann im Stapel bleibt.
+function recordBlock(sess) {
+  if (!sess || sess.w0 == null || sess.ms < 30000) return;
+  S.blockStats = [...S.blockStats, { w: Math.max(0, sess.w0 - queueWork()), ms: sess.ms }].slice(-20);
+}
 function blocksLeft(c) {
-  return Math.max(1, Math.ceil(estimateSec(c) / (S.settings.blockMinutes * 60)));
+  return Math.max(1, Math.ceil(estimateSec(c) / (blockRate() * S.settings.blockMinutes * 60) - 0.15));
 }
 function missedDays() {
   const key = dayKey();
@@ -557,7 +572,8 @@ let lastInteract = 0;
 function startSession() {
   let sess = currentSession();
   if (!sess || !sess.queue.length) {
-    sess = S.session = { day: dayKey(), queue: buildQueue(), ms: 0, startCount: logDay().count };
+    const queue = buildQueue();
+    sess = S.session = { day: dayKey(), queue, ms: 0, startCount: logDay().count, w0: estimateSec(queueCounts(queue)) };
     if (sess.queue.length) bump('blocks');
     save();
   }
@@ -589,6 +605,7 @@ function nextStep() {
 function endBlock() {
   const sess = currentSession();
   const answers = sess ? logDay().count - (sess.startCount || 0) : 0;
+  recordBlock(sess);
   S.session = null; save(); cur = null; view = 'done';
   scheduleSync(0);
   const c = queueCounts(buildQueue());
@@ -620,7 +637,7 @@ setInterval(() => {
   if (txt) txt.textContent = fmtLeft(blockMs() - sess.ms);
 }, 1000);
 function finishDay() {
-  const L = logDay(); L.done = true; S.session = null; save();
+  const L = logDay(); L.done = true; recordBlock(currentSession()); S.session = null; save();
   const st = streak();
   cur = null;
   scheduleSync(0);
